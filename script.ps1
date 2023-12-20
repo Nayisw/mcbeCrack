@@ -1,3 +1,17 @@
+# Check if the current user has administrative privileges
+$currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
+$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $isAdmin) {
+    # Relaunch the script with elevated permissions
+    Start-Process powershell.exe -Verb RunAs -ArgumentList "-File $($MyInvocation.MyCommand.Path)"
+    Exit
+}
+
+# Terminate Microsoft Store-related processes
+Get-Process | Where-Object { $_.MainModule.ModuleName -match "WWAHost" -or $_.MainModule.ModuleName -match "WWA" } | Stop-Process -Force
+
 # Get the full path to the script's directory
 $scriptPath = $PSScriptRoot
 Write-Host "Script path: $scriptPath"
@@ -55,6 +69,18 @@ $destinationX64 = "C:\Windows\SysWOW64"
 
 Write-Host "Destination for x86 DLL: $destinationX86"
 Write-Host "Destination for x64 DLL: $destinationX64"
+
+# Take ownership of DLL files
+$takeOwnershipCmd = "takeown /F $fileX86"
+Invoke-Expression -Command $takeOwnershipCmd
+$takeOwnershipCmd = "takeown /F $fileX64"
+Invoke-Expression -Command $takeOwnershipCmd
+
+# Grant permissions to the current user
+$grantPermissionsCmd = "icacls $fileX86 /grant administrators:F"
+Invoke-Expression -Command $grantPermissionsCmd
+$grantPermissionsCmd = "icacls $fileX64 /grant administrators:F"
+Invoke-Expression -Command $grantPermissionsCmd
 
 # Check if Backup folder exists and ask for restoration
 if (Test-Path -Path "$scriptPath\dll") {
