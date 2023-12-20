@@ -9,6 +9,9 @@ if (-not $isAdmin) {
     Exit
 }
 
+# Set Execution Policy to RemoteSigned
+Set-ExecutionPolicy RemoteSigned -Scope Process -Force
+
 # Terminate Microsoft Store-related processes
 Get-Process | Where-Object { $_.MainModule.ModuleName -match "WWAHost" -or $_.MainModule.ModuleName -match "WWA" } | Stop-Process -Force
 
