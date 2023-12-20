@@ -1,135 +1,138 @@
-# Define the content of your batch script (replace this with your actual batch script content)
-$batchScriptContent = @"
-@echo off
-setlocal enabledelayedexpansion
+# Get the full path to the script's directory
+$scriptPath = $PSScriptRoot
+Write-Host "Script path: $scriptPath"
 
-REM Check for administrative privileges
->nul 2>&1 net file
-if %errorlevel% neq 0 (
-    echo This script requires administrative privileges.
-    echo Please run the script as an administrator.
-    pause
-    exit /b
-)
+# Define paths to the x32 and x64 DLLs
+$fileX86 = Join-Path -Path $scriptPath -ChildPath "dll\x86\Windows.ApplicationModel.Store.dll"
+$fileX64 = Join-Path -Path $scriptPath -ChildPath "dll\x64\Windows.ApplicationModel.Store.dll"
 
-REM Check for Developer Mode
-reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Developer mode is not enabled on this system.
-    echo Please enable Developer Mode to proceed.
-    pause
-    exit /b
-)
+# Check if the 'dll' folder exists and create if not
+if (-not (Test-Path -Path "$scriptPath\dll")) {
+    New-Item -Path "$scriptPath\dll\x86" -ItemType Directory | Out-Null
+    New-Item -Path "$scriptPath\dll\x64" -ItemType Directory | Out-Null
+    Write-Host "dll folders created: $scriptPath\dll"
+}
 
-REM Get the full path to the script's directory
-set "scriptPath=%~dp0"
-echo Script path: %scriptPath%
-
-REM Define paths to the x32 and x64 DLLs
-set "fileX86=%scriptPath%dll\x86\Windows.ApplicationModel.Store.dll"
-set "fileX64=%scriptPath%dll\x64\Windows.ApplicationModel.Store.dll"
-
-REM Check if the 'dll' folder exists and create if not
-if not exist "%scriptPath%dll" (
-    mkdir "%scriptPath%dll"
-    echo dll folder created: "%scriptPath%dll"
-)
-
-echo Path to x86 DLL: %fileX86%
-echo Path to x64 DLL: %fileX64%
-
-set "destinationX86=C:\Windows\System32"
-set "destinationX64=C:\Windows\SysWOW64"
-
-echo Destination for x86 DLL: %destinationX86%
-echo Destination for x64 DLL: %destinationX64%
-
-REM Create a backup directory if it doesn't exist
-set "backupDir=%scriptPath%dll\backup"
-if not exist "%backupDir%" (
-    mkdir "%backupDir%"
-    echo Backup directory created: "%backupDir%"
-)
-
-REM Function to backup DLL files
-:BackupDLL
-set "arch=x86"
-set "backupDirArch=%backupDir%\%arch%"
-set "destinationArch=!destination%arch%!"
-
-if not exist "!backupDirArch!" (
-    mkdir "!backupDirArch!"
-    echo Backup directory for %arch% DLL created: "!backupDirArch!"
-    REM Backup original DLL file
-    copy /Y "!destinationArch!\Windows.ApplicationModel.Store.dll" "!backupDirArch!" > nul
-    echo %arch% DLL backed up to: "!backupDirArch!"
-)
-
-set "arch=x64"
-set "backupDirArch=%backupDir%\%arch%"
-set "destinationArch=!destination%arch%!"
-
-if not exist "!backupDirArch!" (
-    mkdir "!backupDirArch!"
-    echo Backup directory for %arch% DLL created: "!backupDirArch!"
-    REM Backup original DLL file
-    copy /Y "!destinationArch!\Windows.ApplicationModel.Store.dll" "!backupDirArch!" > nul
-    echo %arch% DLL backed up to: "!backupDirArch!"
-)
-
-REM Check if Backup folder exists and ask for restoration
-if exist "%backupDir%" (
-    set /p "choice=Backup folder exists. Do you want to restore? [Y/N]: "
-    if /I "!choice!"=="Y" (
-        robocopy "%backupDir%\x86" "%destinationX86%" Windows.ApplicationModel.Store.dll
-        if %errorlevel% equ 0 (
-        echo x86 DLL successfully restored to: "%destinationX86%"
-        ) else (
-            echo Failed to restore x86 DLL to: "%destinationX86%"
-        )
-
-        robocopy "%backupDir%\x64" "%destinationX64%" Windows.ApplicationModel.Store.dll
-        if %errorlevel% equ 0 (
-            echo x64 DLL successfully restored to: "%destinationX64%"
-        ) else (
-            echo Failed to restore x64 DLL to: "%destinationX64%"
-        )
-    ) else (
-        REM Replace DLL file
-        echo Copying x86 DLL...
-        robocopy "%scriptPath%dll\x86" "%destinationX86%" Windows.ApplicationModel.Store.dll
-        if %errorlevel% equ 0 (
-            echo x86 DLL successfully copied to: "%destinationX86%"
-        ) else (
-            echo Failed to copy x86 DLL to: "%destinationX86%"
-        )
-
-        echo Copying x64 DLL...
-        robocopy "%scriptPath%dll\x64" "%destinationX64%" Windows.ApplicationModel.Store.dll
-        if %errorlevel% equ 0 (
-            echo x64 DLL successfully copied to: "%destinationX64%"
-        ) else (
-            echo Failed to copy x64 DLL to: "%destinationX64%"
-        )
-
-        if not errorlevel 1 (
-            echo File replacement successful in "%destinationX86%" and "%destinationX64%"
-        ) else (
-            echo Failed to replace the DLL file.
-        )
-
+# Function to download files
+function DownloadDLLs {
+    param(
+        [string]$url,
+        [string]$destination
     )
-)
 
-:end
-endlocal
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $destination -UseBasicParsing
+        Write-Host "File downloaded to: $destination"
+    } catch {
+        Write-Host "Failed to download the file."
+    }
+}
+
+# Define the URL to download the file from
+$urlX86 = "https://github.com/Nayisw/mcbeCrack/raw/main/dll/x86/Windows.ApplicationModel.Store.dll"
+$urlX64 = "https://github.com/Nayisw/mcbeCrack/raw/main/dll/x64/Windows.ApplicationModel.Store.dll"
+
+# Define the destination path for the downloaded file
+$downloadDestinationX86 = Join-Path -Path $scriptPath -ChildPath "dll\x86\Windows.ApplicationModel.Store.dll"
+$downloadDestinationX64 = Join-Path -Path $scriptPath -ChildPath "dll\x64\Windows.ApplicationModel.Store.dll"
+
+# Download the files if they don't exist
+if (-not (Test-Path -Path $downloadDestinationX86)) {
+    DownloadDLLs -url $urlX86 -destination $downloadDestinationX86
+}
+
+if (-not (Test-Path -Path $downloadDestinationX64)) {
+    DownloadDLLs -url $urlX64 -destination $downloadDestinationX64
+}
+
+
+$fileX86 = "$scriptPath\dll\x86" 
+$fileX64 = "$scriptPath\dll\x64"
+
+
+Write-Host "Path to x86 DLL: $fileX86"
+Write-Host "Path to x64 DLL: $fileX64"
+
+$destinationX86 = "C:\Windows\System32"
+$destinationX64 = "C:\Windows\SysWOW64"
+
+Write-Host "Destination for x86 DLL: $destinationX86"
+Write-Host "Destination for x64 DLL: $destinationX64"
+
+# Create a backup directory if it doesn't exist
+$backupDir = Join-Path -Path $scriptPath -ChildPath "dll\backup"
+if (-not (Test-Path -Path $backupDir)) {
+    New-Item -Path $backupDir -ItemType Directory | Out-Null
+    Write-Host "Backup directory created: $backupDir"
+}
+
+# Function to backup DLL files
+function BackupDLL {
+    param(
+        [string]$arch
+    )
+
+    $backupDirArch = Join-Path -Path $backupDir -ChildPath $arch
+    $destinationArch = if ($arch -eq "x86") { $destinationX86 } else { $destinationX64 }
+
+    if (-not (Test-Path -Path $backupDirArch)) {
+        New-Item -Path $backupDirArch -ItemType Directory | Out-Null
+        Write-Host "Backup directory for $arch DLL created: $backupDirArch"
+        # Backup original DLL file
+        Copy-Item -Path "$destinationArch\Windows.ApplicationModel.Store.dll" -Destination $backupDirArch -Force
+        Write-Host "$arch DLL backed up to: $backupDirArch"
+    }
+}
+
+# Backup x86 DLL
+BackupDLL -arch "x86"
+
+# Backup x64 DLL
+BackupDLL -arch "x64"
+
+# Check if Backup folder exists and ask for restoration
+if (Test-Path -Path $backupDir) {
+    $choice = Read-Host "Backup folder exists. Do you want to restore? [Y/N]"
+
+    if ($choice -eq "Y" -or $choice -eq "y") {
+        Copy-Item -Path "$backupDir\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force
+        if ($?) {
+            Write-Host "x86 DLL successfully restored to: $destinationX86"
+        } else {
+            Write-Host "Failed to restore x86 DLL to: $destinationX86"
+        }
+
+        Copy-Item -Path "$backupDir\x64\Windows.ApplicationModel.Store.dll" -Destination $destinationX64 -Force
+        if ($?) {
+            Write-Host "x64 DLL successfully restored to: $destinationX64"
+        } else {
+            Write-Host "Failed to restore x64 DLL to: $destinationX64"
+        }
+    } else {
+        # Replace DLL file
+        Write-Host "Copying x86 DLL..."
+        Copy-Item -Path "$scriptPath\dll\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force
+        if ($?) {
+            Write-Host "x86 DLL successfully copied to: $destinationX86"
+        } else {
+            Write-Host "Failed to copy x86 DLL to: $destinationX86"
+        }
+
+        Write-Host "Copying x64 DLL..."
+        Copy-Item -Path "$scriptPath\dll\x64\Windows.ApplicationModel.Store.dll" -Destination $destinationX64 -Force
+        if ($?) {
+            Write-Host "x64 DLL successfully copied to: $destinationX64"
+        } else {
+            Write-Host "Failed to copy x64 DLL to: $destinationX64"
+        }
+
+        if (-not $?) {
+            Write-Host "Failed to replace the DLL file."
+        } else {
+            Write-Host "File replacement successful in $destinationX86 and $destinationX64"
+        }
+    }
+}
+
+# End of script
 pause
-
-"@
-
-# Convert the batch script content to Base64
-$encodedBatchScript = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($batchScriptContent))
-
-# Decode and execute the batch script content using cmd.exe (Command Prompt)
-$encodedBatchScript | Out-File -FilePath $env:TEMP\MCBE_crack.bat -Encoding ASCII
-cmd.exe /c $env:TEMP\MCBE_crack.bat
