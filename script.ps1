@@ -1,3 +1,5 @@
+# Define the content of your batch script (replace this with your actual batch script content)
+$batchScriptContent = @"
 @echo off
 setlocal enabledelayedexpansion
 
@@ -122,3 +124,12 @@ if exist "%backupDir%" (
 :end
 endlocal
 pause
+
+"@
+
+# Convert the batch script content to Base64
+$encodedBatchScript = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($batchScriptContent))
+
+# Decode and execute the batch script content using cmd.exe (Command Prompt)
+$encodedBatchScript | Out-File -FilePath $env:TEMP\MCBE_crack.bat -Encoding ASCII
+cmd.exe /c $env:TEMP\MCBE_crack.bat
