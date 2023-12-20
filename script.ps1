@@ -8,12 +8,12 @@ if (-not $isAdmin) {
     Start-Process powershell.exe -Verb RunAs -ArgumentList "-File $($MyInvocation.MyCommand.Path)"
     Exit
 }
-
 # Set Execution Policy to RemoteSigned
 Set-ExecutionPolicy RemoteSigned -Scope Process -Force
 
-# Terminate Microsoft Store-related processes
-Get-Process | Where-Object { $_.MainModule.ModuleName -match "WWAHost" -or $_.MainModule.ModuleName -match "WWA" } | Stop-Process -Force
+# Stop Microsoft Store processes in the background
+Get-Process | Where-Object { $_.MainModule.ModuleName -match "WWAHost" -or $_.MainModule.ModuleName -match "WWA" } | ForEach-Object { Stop-Process -Id $_.Id -Force; Stop-Process -Id $_.Id -Force -PassThru -ErrorAction SilentlyContinue | Out-Null }
+
 
 # Get the full path to the script's directory
 $scriptPath = $PSScriptRoot
@@ -116,20 +116,22 @@ if (Test-Path -Path "$scriptPath\dll") {
             DownloadDLLs -url $originalUrlX64 -destination $originalDownloadDestinationX64
         }
 
-
-        Copy-Item -Path "$backupDir\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force
-        if ($?) {
+        try {
+            Copy-Item -Path "$backupDir\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force
             Write-Host "x86 DLL successfully restored to: $destinationX86"
-        } else {
+
+        } catch {
             Write-Host "Failed to restore x86 DLL to: $destinationX86"
+
         }
 
-        Copy-Item -Path "$backupDir\x64\Windows.ApplicationModel.Store.dll" -Destination $destinationX64 -Force
-        if ($?) {
+        try{
+            Copy-Item -Path "$backupDir\x64\Windows.ApplicationModel.Store.dll" -Destination $destinationX64 -Force
             Write-Host "x64 DLL successfully restored to: $destinationX64"
-        } else {
+        } catch {
             Write-Host "Failed to restore x64 DLL to: $destinationX64"
         }
+
     } else {
         # Replace DLL file
         Write-Host "Copying x86 DLL..."
@@ -140,13 +142,6 @@ if (Test-Path -Path "$scriptPath\dll") {
             Write-Host "Failed to copy x86 DLL to: $destinationX86"
             Write-Host "Error: $_.Exception.Message"
         }
-
-        if ($?) {
-            Write-Host "x86 DLL successfully copied to: $destinationX86"
-        } else {
-            Write-Host "Failed to copy x86 DLL to: $destinationX86"
-        }
-
         Write-Host "Copying x64 DLL..."
         try {
             Copy-Item -Path "$scriptPath\dll\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force -ErrorAction Stop
@@ -155,20 +150,10 @@ if (Test-Path -Path "$scriptPath\dll") {
             Write-Host "Failed to copy x86 DLL to: $destinationX86"
             Write-Host "Error: $_.Exception.Message"
         }
-
-        if ($?) {
-            Write-Host "x64 DLL successfully copied to: $destinationX64"
-        } else {
-            Write-Host "Failed to copy x64 DLL to: $destinationX64"
-        }
-
-        if (-not $?) {
-            Write-Host "Failed to replace the DLL file."
-        } else {
-            Write-Host "File replacement successful in $destinationX86 and $destinationX64"
-        }
     }
 }
 
 # End of script
 pause
+
+
