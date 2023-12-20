@@ -74,16 +74,16 @@ Write-Host "Destination for x86 DLL: $destinationX86"
 Write-Host "Destination for x64 DLL: $destinationX64"
 
 # Take ownership of DLL files
-$takeOwnershipCmd = "takeown /F $fileX86"
-Invoke-Expression -Command $takeOwnershipCmd
-$takeOwnershipCmd = "takeown /F $fileX64"
-Invoke-Expression -Command $takeOwnershipCmd
+takeown /F $fileX86
+takeown /F $fileX64
 
 # Grant permissions to the current user
-$grantPermissionsCmd = "icacls $fileX86 /grant administrators:F"
-Invoke-Expression -Command $grantPermissionsCmd
-$grantPermissionsCmd = "icacls $fileX64 /grant administrators:F"
-Invoke-Expression -Command $grantPermissionsCmd
+icacls $fileX86 /grant administrators:F
+icacls $fileX64 /grant administrators:F
+
+# Verify permissions and ownership
+Get-Acl $fileX86 | Format-List
+Get-Acl $fileX64 | Format-List
 
 # Check if Backup folder exists and ask for restoration
 if (Test-Path -Path "$scriptPath\dll") {
