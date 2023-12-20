@@ -133,7 +133,14 @@ if (Test-Path -Path "$scriptPath\dll") {
     } else {
         # Replace DLL file
         Write-Host "Copying x86 DLL..."
-        Copy-Item -Path "$scriptPath\dll\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force
+        try {
+            Copy-Item -Path "$scriptPath\dll\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force -ErrorAction Stop
+            Write-Host "x86 DLL successfully copied to: $destinationX86"
+        } catch {
+            Write-Host "Failed to copy x86 DLL to: $destinationX86"
+            Write-Host "Error: $_.Exception.Message"
+        }
+
         if ($?) {
             Write-Host "x86 DLL successfully copied to: $destinationX86"
         } else {
@@ -141,7 +148,14 @@ if (Test-Path -Path "$scriptPath\dll") {
         }
 
         Write-Host "Copying x64 DLL..."
-        Copy-Item -Path "$scriptPath\dll\x64\Windows.ApplicationModel.Store.dll" -Destination $destinationX64 -Force
+        try {
+            Copy-Item -Path "$scriptPath\dll\x86\Windows.ApplicationModel.Store.dll" -Destination $destinationX86 -Force -ErrorAction Stop
+            Write-Host "x86 DLL successfully copied to: $destinationX86"
+        } catch {
+            Write-Host "Failed to copy x86 DLL to: $destinationX86"
+            Write-Host "Error: $_.Exception.Message"
+        }
+
         if ($?) {
             Write-Host "x64 DLL successfully copied to: $destinationX64"
         } else {
