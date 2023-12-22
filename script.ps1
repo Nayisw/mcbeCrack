@@ -11,9 +11,19 @@ if (-not $isAdmin) {
 # Set Execution Policy to RemoteSigned
 Set-ExecutionPolicy RemoteSigned -Scope Process -Force
 
-# Stop Microsoft Store processes in the background
-Get-Process | Where-Object { $_.MainModule.ModuleName -match "WWAHost" -or $_.MainModule.ModuleName -match "WWA" } | ForEach-Object { Stop-Process -Id $_.Id -Force; Stop-Process -Id $_.Id -Force -PassThru -ErrorAction SilentlyContinue | Out-Null }
+# Stop processes using Windows.ApplicationModel.Store.dll in System32 and SysWOW64 directories
+$storeDllProcesses = @(
+    Get-Process | Where-Object { $_.Modules.ModuleName -eq "Windows.ApplicationModel.Store.dll" }
+)
 
+foreach ($process in $storeDllProcesses) {
+    try {
+        Stop-Process -Id $process.Id -Force
+        Write-Host "Stopped process $($process.ProcessName) (ID: $($process.Id))"
+    } catch {
+        Write-Host "Failed to stop process $($process.ProcessName) (ID: $($process.Id))"
+    }
+}
 
 # Get the full path to the script's directory
 $scriptPath = $PSScriptRoot
