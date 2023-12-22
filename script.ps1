@@ -9,7 +9,7 @@ if (-not $isAdmin) {
     Exit
 }
 # Set Execution Policy to RemoteSigned
-Set-ExecutionPolicy RemoteSigned -Scope Process -Force
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
 # Stop processes using Windows.ApplicationModel.Store.dll in System32 and SysWOW64 directories
 $storeDllProcesses = @(
@@ -32,7 +32,7 @@ Write-Host "Script path: $scriptPath"
 
 # Check if the 'dll' folder exists and create if not
 if (-not (Test-Path -Path "$scriptPath\dll")) {
-New-Item -Path "$scriptPath\dll" -ItemType Directory | Out-Null
+    New-Item -Path "$scriptPath\dll" -ItemType Directory | Out-Null
     New-Item -Path "$scriptPath\dll\x86" -ItemType Directory | Out-Null
     New-Item -Path "$scriptPath\dll\x64" -ItemType Directory | Out-Null
     Write-Host "dll folders created: $scriptPath\dll"
