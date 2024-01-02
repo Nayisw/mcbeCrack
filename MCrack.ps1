@@ -6,10 +6,10 @@ if (-not $isAdmin) {
     Start-Process powershell.exe -Verb RunAs -ArgumentList "-File $($MyInvocation.MyCommand.Path)"
     Exit
 }
-Set-ExecutionPolicy Unrestricted -Scope CurrentUser -Force
+Set-ExecutionPolicy Unrestricted -Scope LocalMachine -Force
 
 # Get the full path to the script's directory
-$scriptPath = $PSScriptRoot
+$scriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
 Write-Host "Script path: $scriptPath"
 
 # Check if the 'dll' folder exists and create if not
